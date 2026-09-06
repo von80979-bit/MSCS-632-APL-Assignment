@@ -1,0 +1,215 @@
+
+======================================================================
+# profiling: the same workload in three languages, measured the same way
+
+======================================================================
+$ g++ -O2 -o part2-memory/alloc-cpp part2-memory/alloc.cpp
+[exit 0]
+
+======================================================================
+$ rustc -O -o part2-memory/alloc-rust part2-memory/alloc.rs
+[exit 0]
+
+======================================================================
+$ javac -d part2-memory part2-memory/alloc.java
+[exit 0]
+
+======================================================================
+$ psrecord "./part2-memory/alloc-cpp" \
+    --interval 0.1 --include-children --log profiling/cpp.txt --plot profiling/cpp.png \
+    && python3 profiling/memory-summary.py profiling/cpp.txt
+phase 1 allocated 10000000 integers, running checksum 4995000000
+phase 2 allocated 10000000 integers, running checksum 10000000000
+phase 3 allocated 10000000 integers, running checksum 15015000000
+phase 4 allocated 10000000 integers, running checksum 20040000000
+phase 5 allocated 10000000 integers, running checksum 25075000000
+releasing 5 blocks
+checksum 25075000000
+done in 12.2 s
+Starting up command './part2-memory/alloc-cpp' and attaching to process
+Process finished (12.24 seconds)
+  memory summary of profiling/cpp.txt, 120 samples
+    baseline, before the first phase       4.6 MB
+    peak                                 195.4 MB at 7.7 s
+    largest fall in one interval         190.7 MB between 9.1 s and 9.2 s
+    last sample                            4.7 MB at 12.1 s
+[exit 0]
+
+======================================================================
+$ psrecord "./part2-memory/alloc-rust" \
+    --interval 0.1 --include-children --log profiling/rust.txt --plot profiling/rust.png \
+    && python3 profiling/memory-summary.py profiling/rust.txt
+phase 1 allocated 10000000 integers, running checksum 4995000000
+phase 2 allocated 10000000 integers, running checksum 10000000000
+phase 3 allocated 10000000 integers, running checksum 15015000000
+phase 4 allocated 10000000 integers, running checksum 20040000000
+phase 5 allocated 10000000 integers, running checksum 25075000000
+releasing 5 blocks
+checksum 25075000000
+done in 12.1 s
+Starting up command './part2-memory/alloc-rust' and attaching to process
+Process finished (12.20 seconds)
+  memory summary of profiling/rust.txt, 119 samples
+    baseline, before the first phase       3.4 MB
+    peak                                 194.2 MB at 7.7 s
+    largest fall in one interval         190.7 MB between 9.0 s and 9.1 s
+    last sample                            3.5 MB at 12.1 s
+[exit 0]
+
+======================================================================
+$ psrecord "java -Xms32m -Xmx512m -Xlog:gc -cp part2-memory Alloc" \
+    --interval 0.1 --include-children --log profiling/java.txt --plot profiling/java.png \
+    && python3 profiling/memory-summary.py profiling/java.txt
+[0.017s][info][gc] Using G1
+[1.568s][info][gc] GC(0) Pause Young (Concurrent Start) (G1 Humongous Allocation) 2M->1M(34M) 2.867ms
+[1.568s][info][gc] GC(1) Concurrent Undo Cycle
+[1.568s][info][gc] GC(1) Concurrent Undo Cycle 0.240ms
+phase 1 allocated 10000000 integers, running checksum 4995000000
+[3.144s][info][gc] GC(2) Pause Young (Concurrent Start) (G1 Humongous Allocation) 41M->40M(72M) 2.862ms
+[3.144s][info][gc] GC(3) Concurrent Mark Cycle
+[3.155s][info][gc] GC(3) Pause Remark 79M->79M(135M) 1.636ms
+[3.157s][info][gc] GC(3) Pause Cleanup 79M->79M(135M) 0.240ms
+[3.163s][info][gc] GC(3) Concurrent Mark Cycle 19.286ms
+phase 2 allocated 10000000 integers, running checksum 10000000000
+phase 3 allocated 10000000 integers, running checksum 15015000000
+phase 4 allocated 10000000 integers, running checksum 20040000000
+phase 5 allocated 10000000 integers, running checksum 25075000000
+releasing 5 blocks
+checksum 25075000000
+done in 12.2 s
+Starting up command 'java -Xms32m -Xmx512m -Xlog:gc -cp part2-memory Alloc' and attaching to process
+Process finished (12.35 seconds)
+  memory summary of profiling/java.txt, 121 samples
+    baseline, before the first phase      43.3 MB
+    peak                                 245.2 MB at 9.3 s
+    largest fall in one interval           1.5 MB between 5.0 s and 5.1 s
+    last sample                          243.9 MB at 12.2 s
+[exit 0]
+
+======================================================================
+$ psrecord "java -Xms32m -Xmx512m -XX:G1PeriodicGCInterval=1000 -Xlog:gc -cp part2-memory Alloc" \
+    --interval 0.1 --include-children --log profiling/java-periodic-gc.txt --plot profiling/java-periodic-gc.png \
+    && python3 profiling/memory-summary.py profiling/java-periodic-gc.txt
+[0.006s][info][gc] Using G1
+[1.030s][info][gc] GC(0) Pause Young (Concurrent Start) (G1 Periodic Collection) 2M->1M(34M) 2.817ms
+[1.030s][info][gc] GC(1) Concurrent Mark Cycle
+[1.034s][info][gc] GC(1) Pause Remark 1M->1M(32M) 1.125ms
+[1.036s][info][gc] GC(1) Pause Cleanup 1M->1M(32M) 0.243ms
+[1.037s][info][gc] GC(1) Concurrent Mark Cycle 7.237ms
+phase 1 allocated 10000000 integers, running checksum 4995000000
+[2.035s][info][gc] GC(2) Pause Young (Prepare Mixed) (G1 Periodic Collection) 41M->40M(71M) 2.819ms
+[3.038s][info][gc] GC(3) Pause Young (Mixed) (G1 Periodic Collection) 40M->40M(71M) 1.988ms
+[3.116s][info][gc] GC(4) Pause Young (Concurrent Start) (G1 Humongous Allocation) 40M->40M(71M) 2.090ms
+[3.116s][info][gc] GC(5) Concurrent Mark Cycle
+[3.127s][info][gc] GC(5) Pause Remark 79M->79M(135M) 1.713ms
+[3.129s][info][gc] GC(5) Pause Cleanup 79M->79M(135M) 0.248ms
+[3.136s][info][gc] GC(5) Concurrent Mark Cycle 19.525ms
+phase 2 allocated 10000000 integers, running checksum 10000000000
+[4.668s][info][gc] GC(6) Pause Young (Concurrent Start) (G1 Humongous Allocation) 79M->79M(135M) 2.985ms
+[4.668s][info][gc] GC(7) Concurrent Mark Cycle
+[4.678s][info][gc] GC(7) Pause Remark 118M->118M(200M) 1.672ms
+[4.680s][info][gc] GC(7) Pause Cleanup 118M->118M(200M) 0.158ms
+[4.681s][info][gc] GC(7) Concurrent Mark Cycle 12.677ms
+phase 3 allocated 10000000 integers, running checksum 15015000000
+[6.044s][info][gc] GC(8) Pause Young (Concurrent Start) (G1 Periodic Collection) 118M->118M(200M) 3.168ms
+[6.044s][info][gc] GC(9) Concurrent Mark Cycle
+[6.049s][info][gc] GC(9) Pause Remark 118M->118M(200M) 1.734ms
+[6.050s][info][gc] GC(9) Pause Cleanup 118M->118M(200M) 0.185ms
+[6.051s][info][gc] GC(9) Concurrent Mark Cycle 6.420ms
+[6.203s][info][gc] GC(10) Pause Young (Concurrent Start) (G1 Humongous Allocation) 118M->118M(233M) 2.842ms
+[6.203s][info][gc] GC(11) Concurrent Mark Cycle
+[6.216s][info][gc] GC(11) Pause Remark 157M->157M(265M) 1.936ms
+[6.218s][info][gc] GC(11) Pause Cleanup 157M->157M(265M) 0.178ms
+[6.219s][info][gc] GC(11) Concurrent Mark Cycle 15.316ms
+phase 4 allocated 10000000 integers, running checksum 20040000000
+[7.748s][info][gc] GC(12) Pause Young (Concurrent Start) (G1 Humongous Allocation) 157M->157M(265M) 3.706ms
+[7.748s][info][gc] GC(13) Concurrent Mark Cycle
+[7.758s][info][gc] GC(13) Pause Remark 196M->196M(330M) 2.681ms
+[7.760s][info][gc] GC(13) Pause Cleanup 196M->196M(330M) 0.246ms
+[7.761s][info][gc] GC(13) Concurrent Mark Cycle 13.236ms
+phase 5 allocated 10000000 integers, running checksum 25075000000
+[9.063s][info][gc] GC(14) Pause Young (Concurrent Start) (G1 Periodic Collection) 196M->196M(330M) 16.555ms
+[9.064s][info][gc] GC(15) Concurrent Mark Cycle
+[9.068s][info][gc] GC(15) Pause Remark 196M->196M(330M) 1.899ms
+[9.070s][info][gc] GC(15) Pause Cleanup 196M->196M(330M) 0.354ms
+[9.070s][info][gc] GC(15) Concurrent Mark Cycle 6.842ms
+releasing 5 blocks
+checksum 25075000000
+[10.068s][info][gc] GC(16) Pause Young (Concurrent Start) (G1 Periodic Collection) 197M->1M(330M) 2.612ms
+[10.068s][info][gc] GC(17) Concurrent Mark Cycle
+[10.074s][info][gc] GC(17) Pause Remark 1M->1M(32M) 2.729ms
+[10.078s][info][gc] GC(17) Pause Cleanup 1M->1M(32M) 0.400ms
+[10.080s][info][gc] GC(17) Concurrent Mark Cycle 11.651ms
+[11.072s][info][gc] GC(18) Pause Young (Prepare Mixed) (G1 Periodic Collection) 1M->1M(64M) 2.919ms
+[12.075s][info][gc] GC(19) Pause Young (Mixed) (G1 Periodic Collection) 1M->1M(64M) 1.850ms
+done in 12.3 s
+Starting up command 'java -Xms32m -Xmx512m -XX:G1PeriodicGCInterval=1000 -Xlog:gc -cp part2-memory Alloc' and attaching to process
+Process finished (12.37 seconds)
+  memory summary of profiling/java-periodic-gc.txt, 121 samples
+    baseline, before the first phase      43.4 MB
+    peak                                 259.3 MB at 9.3 s
+    largest fall in one interval         207.2 MB between 10.1 s and 10.2 s
+    last sample                           52.2 MB at 12.3 s
+[exit 0]
+
+======================================================================
+$ python3 profiling/combined-memory.py
+wrote profiling/combined-memory.png
+[exit 0]
+
+======================================================================
+$ python3 profiling/java-gc-contrast.py
+wrote profiling/java-periodic-gc-contrast.png
+[exit 0]
+
+======================================================================
+$ valgrind --leak-check=full /tmp/alloc-rust
+==1== Memcheck, a memory error detector
+==1== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==1== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==1== Command: /tmp/alloc-rust
+==1== 
+phase 1 allocated 10000000 integers, running checksum 4995000000
+phase 2 allocated 10000000 integers, running checksum 10000000000
+phase 3 allocated 10000000 integers, running checksum 15015000000
+phase 4 allocated 10000000 integers, running checksum 20040000000
+phase 5 allocated 10000000 integers, running checksum 25075000000
+releasing 5 blocks
+checksum 25075000000
+done in 13.7 s
+==1== 
+==1== HEAP SUMMARY:
+==1==     in use at exit: 0 bytes in 0 blocks
+==1==   total heap usage: 17 allocs, 17 frees, 200,003,301 bytes allocated
+==1== 
+==1== All heap blocks were freed -- no leaks are possible
+==1== 
+==1== For lists of detected and suppressed errors, rerun with: -s
+==1== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+[exit 0]
+
+======================================================================
+$ valgrind --leak-check=full /tmp/alloc-cpp
+==1== Memcheck, a memory error detector
+==1== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==1== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==1== Command: /tmp/alloc-cpp
+==1== 
+phase 1 allocated 10000000 integers, running checksum 4995000000
+phase 2 allocated 10000000 integers, running checksum 10000000000
+phase 3 allocated 10000000 integers, running checksum 15015000000
+phase 4 allocated 10000000 integers, running checksum 20040000000
+phase 5 allocated 10000000 integers, running checksum 25075000000
+releasing 5 blocks
+checksum 25075000000
+done in 15.1 s
+==1== 
+==1== HEAP SUMMARY:
+==1==     in use at exit: 0 bytes in 0 blocks
+==1==   total heap usage: 8 allocs, 8 frees, 200,077,864 bytes allocated
+==1== 
+==1== All heap blocks were freed -- no leaks are possible
+==1== 
+==1== For lists of detected and suppressed errors, rerun with: -s
+==1== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+[exit 0]

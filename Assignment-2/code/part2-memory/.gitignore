@@ -1,0 +1,4 @@
+# Build output. Every program here is compiled inside the container before a run, so nothing built belongs in git.
+alloc-cpp
+alloc-rust
+*.class

@@ -1,0 +1,5 @@
+# The image only needs the version script. Every program, transcript and chart in this directory is
+# bind-mounted at run time, so keeping them out of the build context stops rebuilds from slowing down as
+# the profiling output grows.
+*
+!toolchain-versions.sh
