@@ -1,0 +1,4 @@
+# Build output. The C++ binary is compiled from source on every clone, so it does not belong in git.
+cpp/expense-tracker
+cpp/*.o
+python/__pycache__/
