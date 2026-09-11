@@ -1,0 +1,115 @@
+Expense Tracker
+Commands: add, list, filter, summary, edit, delete, quit
+> summary
+Food              $148.85
+Transport          $73.00
+Utilities         $216.15
+Entertainment      $33.99
+Other              $31.55
+
+Overall           $503.54
+> list
+  ID  DATE           AMOUNT  CATEGORY         DESCRIPTION
+   1  2026-01-05     $12.50  Food             Coffee and pastry
+   2  2026-01-08     $45.00  Transport        Monthly transit top-up
+   3  2026-01-14    $120.75  Utilities        Electricity bill
+   4  2026-01-22     $18.99  Entertainment    Cinema ticket
+   5  2026-01-28     $32.40  Food             Grocery run
+   6  2026-02-03      $9.25  Other            Stationery
+   7  2026-02-11     $62.10  Food             Dinner with friends
+   8  2026-02-17     $28.00  Transport        Airport taxi
+   9  2026-02-25     $95.40  Utilities        Internet and phone
+  10  2026-03-04     $15.00  Entertainment    Streaming subscription
+  11  2026-03-12     $41.85  Food             Weekly groceries
+  12  2026-03-20     $22.30  Other            Pharmacy
+> filter
+Start date (YYYY-MM-DD, blank for none): 2026-01-01
+End date (YYYY-MM-DD, blank for none): 2026-01-31
+Category (blank for all): Food
+  ID  DATE           AMOUNT  CATEGORY         DESCRIPTION
+   1  2026-01-05     $12.50  Food             Coffee and pastry
+   5  2026-01-28     $32.40  Food             Grocery run
+> filter
+Start date (YYYY-MM-DD, blank for none): 
+End date (YYYY-MM-DD, blank for none): 
+Category (blank for all): 
+  ID  DATE           AMOUNT  CATEGORY         DESCRIPTION
+   1  2026-01-05     $12.50  Food             Coffee and pastry
+   2  2026-01-08     $45.00  Transport        Monthly transit top-up
+   3  2026-01-14    $120.75  Utilities        Electricity bill
+   4  2026-01-22     $18.99  Entertainment    Cinema ticket
+   5  2026-01-28     $32.40  Food             Grocery run
+   6  2026-02-03      $9.25  Other            Stationery
+   7  2026-02-11     $62.10  Food             Dinner with friends
+   8  2026-02-17     $28.00  Transport        Airport taxi
+   9  2026-02-25     $95.40  Utilities        Internet and phone
+  10  2026-03-04     $15.00  Entertainment    Streaming subscription
+  11  2026-03-12     $41.85  Food             Weekly groceries
+  12  2026-03-20     $22.30  Other            Pharmacy
+> filter
+Start date (YYYY-MM-DD, blank for none): 2026-05-01
+End date (YYYY-MM-DD, blank for none): 2026-05-31
+Category (blank for all): 
+No expenses match.
+> add
+Date (YYYY-MM-DD): 2026-13-01
+Date must be in YYYY-MM-DD form.
+Date (YYYY-MM-DD): 2026-02-31
+That date does not exist.
+Date (YYYY-MM-DD): 2026-04-05
+Amount: abc
+Amount must be a number.
+Amount: -15.00
+Amount must be greater than zero.
+Amount: 42.50
+Category (Food, Transport, Utilities, Entertainment, Other): Books
+Category must be one of: Food, Transport, Utilities, Entertainment, Other.
+Category (Food, Transport, Utilities, Entertainment, Other): food
+Description: Team lunch
+Added expense 13.
+> edit
+Expense id: 99
+No expense with id 99.
+> edit
+Expense id: 3
+Date [2026-01-14] (blank to keep): 
+Amount [120.75] (blank to keep): -5.00
+Amount must be greater than zero.
+Amount [120.75] (blank to keep): 135.00
+Category [Utilities] (blank to keep): 
+Description [Electricity bill] (blank to keep): Electricity and gas bill
+Updated expense 3.
+> delete
+Expense id: 99
+No expense with id 99.
+> delete
+Expense id: 1
+Deleted expense 1.
+> list
+  ID  DATE           AMOUNT  CATEGORY         DESCRIPTION
+   2  2026-01-08     $45.00  Transport        Monthly transit top-up
+   3  2026-01-14    $135.00  Utilities        Electricity and gas bill
+   4  2026-01-22     $18.99  Entertainment    Cinema ticket
+   5  2026-01-28     $32.40  Food             Grocery run
+   6  2026-02-03      $9.25  Other            Stationery
+   7  2026-02-11     $62.10  Food             Dinner with friends
+   8  2026-02-17     $28.00  Transport        Airport taxi
+   9  2026-02-25     $95.40  Utilities        Internet and phone
+  10  2026-03-04     $15.00  Entertainment    Streaming subscription
+  11  2026-03-12     $41.85  Food             Weekly groceries
+  12  2026-03-20     $22.30  Other            Pharmacy
+  13  2026-04-05     $42.50  Food             Team lunch
+> summary
+Food              $178.85
+Transport          $73.00
+Utilities         $230.40
+Entertainment      $33.99
+Other              $31.55
+
+Overall           $547.79
+> help
+Unknown command: help.
+Expense Tracker
+Commands: add, list, filter, summary, edit, delete, quit
+> quit
+Goodbye.
