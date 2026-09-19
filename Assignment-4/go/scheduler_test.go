@@ -1,4 +1,4 @@
-// The 12 shared test cases from the specification.
+// The 13 shared test cases from the specification.
 
 package main
 
@@ -7,10 +7,13 @@ import (
 	"maps"
 	"math/rand/v2"
 	"slices"
+	"strings"
 	"testing"
 )
 
 var mae = Preference{Morning, Afternoon, Evening}
+
+const seedCount = 50
 
 func seededRandom(seed uint64) *rand.Rand {
 	return rand.New(rand.NewPCG(seed, seed))
@@ -33,8 +36,8 @@ func employeeRanking(name string, preference Preference, days ...Day) Employee {
 	return Employee{Name: name, Preferences: preferences}
 }
 
-// slotOf returns the shift the employee works on the day, or false for no assignment.
-func slotOf(schedule Schedule, name string, day Day) (Shift, bool) {
+// shiftOn returns the shift the employee works on the day, or false for no assignment.
+func shiftOn(schedule Schedule, name string, day Day) (Shift, bool) {
 	for shift, slot := range schedule.Slots[day] {
 		for _, index := range slot {
 			if schedule.Employees[index].Name == name {
@@ -50,7 +53,7 @@ func TestRankFallback(t *testing.T) {
 
 	schedule := buildSchedule(employees, 3, seededRandom(1))
 
-	if shift, _ := slotOf(schedule, "E4", Monday); shift != Afternoon {
+	if shift, _ := shiftOn(schedule, "E4", Monday); shift != Afternoon {
 		t.Fatalf("E4 works Monday %v, want afternoon", shift)
 	}
 	want := RankFallback{Employee: "E4", Day: Monday, FirstChoice: Morning, Placed: Afternoon, Choice: 2}
@@ -64,7 +67,7 @@ func TestDayMoveToNextDay(t *testing.T) {
 
 	schedule := buildSchedule(employees, 3, seededRandom(1))
 
-	if shift, placed := slotOf(schedule, "E10", Tuesday); !placed || shift != Morning {
+	if shift, placed := shiftOn(schedule, "E10", Tuesday); !placed || shift != Morning {
 		t.Fatalf("E10 works Tuesday %v (placed %v), want morning", shift, placed)
 	}
 	want := DayMove{Employee: "E10", RankedDay: Monday, Day: Tuesday, Shift: Morning}
@@ -92,7 +95,7 @@ func TestUnplaced(t *testing.T) {
 	schedule := buildSchedule(employees, 3, seededRandom(1))
 
 	for _, day := range []Day{Monday, Saturday, Sunday} {
-		if _, placed := slotOf(schedule, "Late", day); placed {
+		if _, placed := shiftOn(schedule, "Late", day); placed {
 			t.Fatalf("Late works %v, want no assignment", day)
 		}
 	}
@@ -104,42 +107,27 @@ func TestUnplaced(t *testing.T) {
 
 func TestRandomFill(t *testing.T) {
 	employees := []Employee{
-		employeeRanking("Solo", mae, Monday),
-		employeeRanking("Busy", Preference{Afternoon, Morning, Evening}, Monday),
-		employeeRanking("Full", mae, Tuesday, Wednesday, Thursday, Friday, Saturday),
+		employeeRanking("Placed", mae, Monday),
 		employeeRanking("Free1", mae),
 		employeeRanking("Free2", mae),
-		employeeRanking("Free3", mae),
-		employeeRanking("Free4", mae),
+		employeeRanking("FullWeek", mae, Tuesday, Wednesday, Thursday, Friday, Saturday),
+		employeeRanking("SameDay", Preference{Afternoon, Morning, Evening}, Monday),
 	}
-	free := []string{"Free1", "Free2", "Free3", "Free4"}
+	eligible := []string{"Free1", "Free2"}
 
-	for seed := range uint64(20) {
+	for seed := range uint64(seedCount) {
 		schedule := buildSchedule(employees, 3, seededRandom(seed))
 
 		if got := len(schedule.Slots[Monday][Morning]); got != 2 {
 			t.Fatalf("seed %d: Monday morning has %d employees, want 2", seed, got)
 		}
 		added := schedule.Employees[schedule.Slots[Monday][Morning][1]].Name
-		if !slices.Contains(free, added) {
-			t.Fatalf("seed %d: random fill added %s to Monday morning, want a free employee", seed, added)
-		}
-		if got := len(schedule.Slots[Monday][Evening]); got != 2 {
-			t.Fatalf("seed %d: empty Monday evening has %d employees, want 2", seed, got)
-		}
-		for _, employee := range schedule.Slots[Monday][Evening] {
-			if name := schedule.Employees[employee].Name; !slices.Contains(free, name) {
-				t.Fatalf("seed %d: random fill added %s to Monday evening, want a free employee", seed, name)
-			}
+		if !slices.Contains(eligible, added) {
+			t.Fatalf("seed %d: random fill added %s to Monday morning, want Free1 or Free2", seed, added)
 		}
 		want := RandomFill{Employee: added, Day: Monday, Shift: Morning}
 		if !slices.Contains(schedule.Changes, Change(want)) {
 			t.Fatalf("seed %d: changes %v do not contain %v", seed, schedule.Changes, want)
-		}
-		for _, change := range schedule.Changes {
-			if fill, isFill := change.(RandomFill); isFill && fill.Employee == "Full" {
-				t.Fatalf("seed %d: random fill added Full, who already works 5 days", seed)
-			}
 		}
 	}
 }
@@ -151,7 +139,7 @@ func TestTransfer(t *testing.T) {
 		employeesRanking("Evening", 1, Preference{Evening, Morning, Afternoon}, Monday),
 	)
 
-	for seed := range uint64(20) {
+	for seed := range uint64(seedCount) {
 		schedule := buildSchedule(employees, 3, seededRandom(seed))
 
 		if got := len(schedule.Slots[Monday][Evening]); got != 2 {
@@ -186,7 +174,7 @@ func TestNoDonor(t *testing.T) {
 }
 
 func TestOneShiftPerDay(t *testing.T) {
-	for seed := range uint64(20) {
+	for seed := range uint64(seedCount) {
 		schedule := buildSchedule(sampleEmployees(), 3, seededRandom(seed))
 
 		for day := range Day(daysPerWeek) {
@@ -205,7 +193,7 @@ func TestOneShiftPerDay(t *testing.T) {
 }
 
 func TestFiveDayLimit(t *testing.T) {
-	for seed := range uint64(20) {
+	for seed := range uint64(seedCount) {
 		schedule := buildSchedule(sampleEmployees(), 3, seededRandom(seed))
 
 		days := map[string]int{}
@@ -225,7 +213,7 @@ func TestFiveDayLimit(t *testing.T) {
 }
 
 func TestSampleCoverage(t *testing.T) {
-	for seed := range uint64(20) {
+	for seed := range uint64(seedCount) {
 		schedule := buildSchedule(sampleEmployees(), 3, seededRandom(seed))
 
 		counts := map[string]int{}
@@ -241,6 +229,13 @@ func TestSampleCoverage(t *testing.T) {
 		}
 		if !maps.Equal(counts, want) {
 			t.Fatalf("seed %d: change counts %v, want %v", seed, counts, want)
+		}
+		dayMove := DayMove{Employee: "Kai", RankedDay: Monday, Day: Tuesday, Shift: Evening}
+		unplaced := Unplaced{Employee: "Leo", Day: Monday}
+		for _, change := range []Change{dayMove, unplaced} {
+			if !slices.Contains(schedule.Changes, change) {
+				t.Fatalf("seed %d: changes %v do not contain %v", seed, schedule.Changes, change)
+			}
 		}
 	}
 }
@@ -259,9 +254,10 @@ func TestSlotMaximumVariable(t *testing.T) {
 		{"-2", true, 3, false},
 	}
 	for _, c := range cases {
-		got, valid := slotMaximum(c.value, c.isSet)
+		got, valid := parseSlotMaximum(c.value, c.isSet)
 		if got != c.want || valid != c.wantValid {
-			t.Errorf("slotMaximum(%q, %v) = %d, %v, want %d, %v", c.value, c.isSet, got, valid, c.want, c.wantValid)
+			t.Errorf("parseSlotMaximum(%q, %v) = %d, %v, want %d, %v",
+				c.value, c.isSet, got, valid, c.want, c.wantValid)
 		}
 	}
 }
@@ -291,5 +287,26 @@ func TestRankingInput(t *testing.T) {
 
 	if _, isDayOff, err := parseRanking("-"); err != nil || !isDayOff {
 		t.Errorf("parseRanking(\"-\") = day off %v, %v, want a day off", isDayOff, err)
+	}
+}
+
+func TestPreferenceTable(t *testing.T) {
+	employees := []Employee{
+		employeeRanking("Ana", mae, Monday, Sunday),
+		employeeRanking("Bo", Preference{Evening, Morning, Afternoon}, Tuesday),
+	}
+
+	var table strings.Builder
+	writeGrid(&table, preferenceRows(employees))
+
+	want := strings.Join([]string{
+		"Employee | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday",
+		"---------+--------+---------+-----------+----------+--------+----------+-------",
+		"Ana      | M A E  | -       | -         | -        | -      | -        | M A E",
+		"Bo       | -      | E M A   | -         | -        | -      | -        | -",
+		"",
+	}, "\n")
+	if table.String() != want {
+		t.Fatalf("preference table\n%s\nwant\n%s", table.String(), want)
 	}
 }

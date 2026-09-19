@@ -5,8 +5,19 @@ mod model;
 mod output;
 mod scheduler;
 
-fn main() {
-    // Placeholder until the Rust implementation lands. It proves that the Docker run passes the variable through.
-    let slot_maximum = std::env::var("MAX_EMPLOYEES_PER_SLOT").unwrap_or_else(|_| String::from("unset"));
-    println!("scheduler-rust: not implemented yet. MAX_EMPLOYEES_PER_SLOT={slot_maximum}");
+use std::io::{self, Write};
+
+fn main() -> io::Result<()> {
+    let slot_maximum = input::read_slot_maximum();
+
+    let mut stdout = io::stdout().lock();
+    let employees = input::collect_employees(&mut io::stdin().lock(), &mut stdout)?;
+    if employees.is_empty() {
+        writeln!(stdout, "No employees entered.")?;
+        return Ok(());
+    }
+
+    let schedule = scheduler::build_schedule(&employees, slot_maximum, &mut rand::rng());
+    writeln!(stdout)?;
+    write!(stdout, "{}", output::render(&schedule, &employees, slot_maximum))
 }

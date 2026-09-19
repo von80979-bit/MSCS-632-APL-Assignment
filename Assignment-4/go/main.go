@@ -9,9 +9,10 @@ import (
 )
 
 func main() {
-	maxPerSlot, isValid := slotMaximum(os.LookupEnv("MAX_EMPLOYEES_PER_SLOT"))
+	slotMaximum, isValid := parseSlotMaximum(os.LookupEnv(slotMaximumVariable))
 	if !isValid {
-		fmt.Fprintf(os.Stderr, "MAX_EMPLOYEES_PER_SLOT must be a whole number of 2 or more. Using %d.\n", maxPerSlot)
+		fmt.Fprintf(os.Stderr, "%s must be a whole number of %d or more. Using %d.\n",
+			slotMaximumVariable, minEmployeesPerSlot, slotMaximum)
 	}
 
 	employees := readEmployees(os.Stdin, os.Stdout)
@@ -21,7 +22,7 @@ func main() {
 	}
 
 	random := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	schedule := buildSchedule(employees, maxPerSlot, random)
+	schedule := buildSchedule(employees, slotMaximum, random)
 	fmt.Println()
 	writeSchedule(os.Stdout, schedule)
 }

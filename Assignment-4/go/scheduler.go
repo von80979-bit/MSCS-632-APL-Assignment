@@ -1,4 +1,4 @@
-// The four passes: preferences, day moves, random fill, and transfer.
+// The four checks: preferences, day moves, random fill, and transfer.
 
 package main
 
@@ -7,21 +7,21 @@ import (
 	"slices"
 )
 
-type placement struct {
+type transferCandidate struct {
 	employee int
 	day      Day
 	shift    Shift
 }
 
-// overflow is an employee whose ranked day was full in pass 1.
+// overflow is an employee whose ranked day was full in check 1.
 type overflow struct {
 	employee int
 	day      Day
 }
 
-// buildSchedule runs the four passes over the week. The caller passes the random source, so a test can seed it.
-func buildSchedule(employees []Employee, maxPerSlot int, random *rand.Rand) Schedule {
-	schedule := Schedule{Employees: employees, MaxPerSlot: maxPerSlot}
+// buildSchedule runs the four checks over the week. The caller checks the random source, so a test can seed it.
+func buildSchedule(employees []Employee, slotMaximum int, random *rand.Rand) Schedule {
+	schedule := Schedule{Employees: employees, SlotMaximum: slotMaximum}
 	overflows := schedule.placePreferences()
 	schedule.moveDays(overflows)
 	schedule.fillAtRandom(random)
@@ -29,18 +29,18 @@ func buildSchedule(employees []Employee, maxPerSlot int, random *rand.Rand) Sche
 	return schedule
 }
 
-// placePreferences is pass 1. It places each employee in the best ranked shift with room, in entry order, and
+// placePreferences is check 1. It places each employee in the best ranked shift with room, in entry order, and
 // returns the employees whose ranked day was full.
 func (schedule *Schedule) placePreferences() []overflow {
 	var overflows []overflow
 	for day := range Day(daysPerWeek) {
-		for employee, employeeData := range schedule.Employees {
-			preference, ranked := employeeData.Preferences[day]
+		for id, employee := range schedule.Employees {
+			preference, ranked := employee.Preferences[day]
 			if !ranked {
 				continue
 			}
-			if !schedule.placeByRank(employee, day, preference) {
-				overflows = append(overflows, overflow{employee: employee, day: day})
+			if !schedule.placeByRank(id, day, preference) {
+				overflows = append(overflows, overflow{employee: id, day: day})
 			}
 		}
 	}
@@ -67,7 +67,7 @@ func (schedule *Schedule) placeByRank(employee int, day Day, preference Preferen
 	return true
 }
 
-// moveDays is pass 2. It places each overflow on the first other day with room, starting from the next day and
+// moveDays is check 2. It places each overflow on the first other day with room, starting from the next day and
 // wrapping to Monday, because the schedule covers one week. An overflow with no such day stays unplaced.
 func (schedule *Schedule) moveDays(overflows []overflow) {
 	for _, overflow := range overflows {
@@ -104,8 +104,7 @@ func (schedule *Schedule) moveToOtherDay(overflow overflow) bool {
 	return false
 }
 
-// fillAtRandom is pass 3. It adds random candidates to each short slot until the slot has 2 employees or no
-// candidate is left. A candidate has no assignment on that day and fewer than 5 days.
+// fillAtRandom is check 3.
 func (schedule *Schedule) fillAtRandom(random *rand.Rand) {
 	for day := range Day(daysPerWeek) {
 		for shift := range Shift(shiftsPerDay) {
@@ -131,9 +130,7 @@ func (schedule *Schedule) fillAtRandom(random *rand.Rand) {
 	}
 }
 
-// transfer is pass 4. It moves employees from donor slots into each slot that is still short, until the slot has 2
-// employees or no donor is left. A donor slot has more than 2 employees, so it never becomes short. A slot without a
-// donor stays short.
+// transfer is check 4. A donor slot has more than 2 employees, so a move never makes the donor short.
 func (schedule *Schedule) transfer(random *rand.Rand) {
 	for day := range Day(daysPerWeek) {
 		for shift := range Shift(shiftsPerDay) {
@@ -166,12 +163,12 @@ func (schedule *Schedule) transfer(random *rand.Rand) {
 // transferCandidates returns the employees in the donor slots of the same day. A move within the day keeps the
 // one-shift-per-day rule. Without a donor on the same day, it returns the employees in donor slots on other days
 // who have no assignment on the target day.
-func (schedule *Schedule) transferCandidates(day Day, shift Shift) []placement {
-	var candidates []placement
+func (schedule *Schedule) transferCandidates(day Day, shift Shift) []transferCandidate {
+	var candidates []transferCandidate
 	for donorShift := range Shift(shiftsPerDay) {
 		if donorShift != shift && schedule.isDonor(day, donorShift) {
 			for _, employee := range schedule.Slots[day][donorShift] {
-				candidates = append(candidates, placement{employee: employee, day: day, shift: donorShift})
+				candidates = append(candidates, transferCandidate{employee: employee, day: day, shift: donorShift})
 			}
 		}
 	}
@@ -188,7 +185,8 @@ func (schedule *Schedule) transferCandidates(day Day, shift Shift) []placement {
 			}
 			for _, employee := range schedule.Slots[donorDay][donorShift] {
 				if !schedule.hasAssignment(employee, day) {
-					candidates = append(candidates, placement{employee: employee, day: donorDay, shift: donorShift})
+					candidate := transferCandidate{employee: employee, day: donorDay, shift: donorShift}
+					candidates = append(candidates, candidate)
 				}
 			}
 		}
@@ -234,7 +232,7 @@ func (schedule *Schedule) hasAssignment(employee int, day Day) bool {
 }
 
 func (schedule *Schedule) hasRoom(day Day, shift Shift) bool {
-	return len(schedule.Slots[day][shift]) < schedule.MaxPerSlot
+	return len(schedule.Slots[day][shift]) < schedule.SlotMaximum
 }
 
 func (schedule *Schedule) assign(employee int, day Day, shift Shift) {

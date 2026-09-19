@@ -13,11 +13,12 @@ import (
 	"unicode"
 )
 
+const slotMaximumVariable = "MAX_EMPLOYEES_PER_SLOT"
+
 var errInvalidRanking = errors.New("Use 1 to 3 different letters from M, A, and E, or - for a day off.")
 
 var shiftLetters = map[rune]Shift{'M': Morning, 'A': Afternoon, 'E': Evening}
 
-// console asks questions on out and reads one line per answer from in.
 type console struct {
 	lines *bufio.Scanner
 	out   io.Writer
@@ -121,9 +122,9 @@ func (console console) askPreferences(name string) (map[Day]Preference, bool) {
 	return preferences, true
 }
 
-// slotMaximum reads the value of MAX_EMPLOYEES_PER_SLOT. It returns the default of 3 when the variable is not set,
+// parseSlotMaximum reads the value of MAX_EMPLOYEES_PER_SLOT. It returns the default of 3 when the variable is not set,
 // and returns false when the value is not a whole number of 2 or more.
-func slotMaximum(value string, isSet bool) (int, bool) {
+func parseSlotMaximum(value string, isSet bool) (int, bool) {
 	if !isSet {
 		return defaultEmployeesPerSlot, true
 	}

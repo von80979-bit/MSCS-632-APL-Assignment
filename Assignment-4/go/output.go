@@ -1,4 +1,4 @@
-// The schedule table, the changes, and the employee summary.
+// The preference table, the schedule table, the changes, and the employee summary.
 
 package main
 
@@ -10,16 +10,54 @@ import (
 )
 
 func writeSchedule(out io.Writer, schedule Schedule) {
-	fmt.Fprintf(out, "Weekly schedule (maximum %d employees per slot)\n\n", schedule.MaxPerSlot)
-	writeTable(out, schedule)
+	fmt.Fprint(out, "Employee preferences\n\n")
+	writeGrid(out, preferenceRows(schedule.Employees))
+	fmt.Fprintln(out)
+	fmt.Fprintf(out, "Weekly schedule (maximum %d employees per slot)\n\n", schedule.SlotMaximum)
+	writeGrid(out, scheduleRows(schedule))
 	fmt.Fprintln(out)
 	writeChanges(out, schedule.Changes)
 	fmt.Fprintln(out)
 	writeSummary(out, schedule)
 }
 
-func writeTable(out io.Writer, schedule Schedule) {
-	rows := [][]string{{"Day", "Morning", "Afternoon", "Evening"}}
+// preferenceRows gives the header and one row per employee in entry order, with the ranking of each day.
+func preferenceRows(employees []Employee) [][]string {
+	header := []string{"Employee"}
+	for day := range Day(daysPerWeek) {
+		header = append(header, day.String())
+	}
+	rows := [][]string{header}
+	for _, employee := range employees {
+		row := []string{employee.Name}
+		for day := range Day(daysPerWeek) {
+			row = append(row, rankingCell(employee, day))
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+// rankingCell gives the shift letters in rank order, for example "M A E", or "-" for a day off.
+func rankingCell(employee Employee, day Day) string {
+	preference, hasPreference := employee.Preferences[day]
+	if !hasPreference {
+		return "-"
+	}
+	letters := make([]string, len(preference))
+	for rank, shift := range preference {
+		letters[rank] = shift.letter()
+	}
+	return strings.Join(letters, " ")
+}
+
+// scheduleRows gives the header and one row per day, with the employees of each slot.
+func scheduleRows(schedule Schedule) [][]string {
+	header := []string{"Day"}
+	for shift := range Shift(shiftsPerDay) {
+		header = append(header, shift.title())
+	}
+	rows := [][]string{header}
 	for day := range Day(daysPerWeek) {
 		row := []string{day.String()}
 		for _, slot := range schedule.Slots[day] {
@@ -27,7 +65,11 @@ func writeTable(out io.Writer, schedule Schedule) {
 		}
 		rows = append(rows, row)
 	}
+	return rows
+}
 
+// writeGrid prints the rows as a table. The first row is the header, and each column is as wide as its longest cell.
+func writeGrid(out io.Writer, rows [][]string) {
 	widths := make([]int, len(rows[0]))
 	for _, row := range rows {
 		for column, text := range row {
@@ -109,7 +151,6 @@ func changeLine(change Change) string {
 	}
 }
 
-// writeSummary prints the days worked by each employee, in entry order.
 func writeSummary(out io.Writer, schedule Schedule) {
 	fmt.Fprintln(out, "Employees")
 	nameWidth := 0

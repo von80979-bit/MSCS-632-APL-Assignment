@@ -2,6 +2,8 @@
 
 package main
 
+import "strings"
+
 // Day is one day of the week, from Monday to Sunday.
 type Day int
 
@@ -36,6 +38,17 @@ var shiftNames = [shiftsPerDay]string{"morning", "afternoon", "evening"}
 
 func (shift Shift) String() string { return shiftNames[shift] }
 
+// title is the shift name as the schedule table header shows it.
+func (shift Shift) title() string {
+	name := shift.String()
+	return strings.ToUpper(name[:1]) + name[1:]
+}
+
+// letter is the shift letter of the ranking input, as the preference table shows it.
+func (shift Shift) letter() string {
+	return strings.ToUpper(shift.String()[:1])
+}
+
 const (
 	minEmployeesPerSlot     = 2
 	defaultEmployeesPerSlot = 3
@@ -56,12 +69,12 @@ type Employee struct {
 // assignment.
 type Slot []int
 
-// Schedule is the week's 21 slots, and the changes the scheduler made in the order the passes made them.
+// Schedule is the week's 21 slots, and the changes the scheduler made in the order of the checks.
 type Schedule struct {
-	Employees  []Employee
-	MaxPerSlot int
-	Slots      [daysPerWeek][shiftsPerDay]Slot
-	Changes    []Change
+	Employees   []Employee
+	SlotMaximum int
+	Slots       [daysPerWeek][shiftsPerDay]Slot
+	Changes     []Change
 }
 
 // Change is one change the scheduler made to the preferences. The unexported method keeps the set of change types
@@ -109,7 +122,7 @@ type Transfer struct {
 	ToShift   Shift
 }
 
-// StillShort records a slot that stays short after every pass.
+// StillShort records a slot that stays short after every check.
 type StillShort struct {
 	Day       Day
 	Shift     Shift
