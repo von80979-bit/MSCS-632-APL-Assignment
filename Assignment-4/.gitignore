@@ -1,0 +1,3 @@
+# Build output. Both programs compile from source on each clone and in the Docker image, so no build output goes in git.
+rust/target/
+go/scheduler-go

@@ -1,0 +1,3 @@
+# The image compiles from source, so local build output only slows the build context.
+rust/target/
+go/scheduler-go
