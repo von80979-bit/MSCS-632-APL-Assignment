@@ -1,0 +1,2 @@
+# Build output. The program compiles from source on each clone and in the Docker image, so no build output goes in git.
+cpp/ride_sharing

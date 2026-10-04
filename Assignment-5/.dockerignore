@@ -1,0 +1,2 @@
+# The image compiles from source, so local build output only slows the build context.
+cpp/ride_sharing
