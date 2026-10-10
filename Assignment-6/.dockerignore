@@ -1,0 +1,4 @@
+# The image builds from source, so local build output and results files only slow the build context.
+java/target
+go/rideshare-go
+**/results.txt

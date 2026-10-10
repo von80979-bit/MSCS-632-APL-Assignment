@@ -1,0 +1,4 @@
+# Build output and run output. The program builds from source on each clone and in the Docker image.
+java/target/
+go/rideshare-go
+results.txt
