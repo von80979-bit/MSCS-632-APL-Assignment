@@ -1,0 +1,3 @@
+# The image needs only the Prolog file, so the screenshots and the README only slow the build context.
+screenshots
+README.md
