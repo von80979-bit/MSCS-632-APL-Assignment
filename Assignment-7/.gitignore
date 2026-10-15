@@ -1,0 +1,6 @@
+# Build output. The programs build from source on each clone and in the Docker image.
+c/stats
+ocaml/stats
+ocaml/*.cm*
+ocaml/*.o
+__pycache__/

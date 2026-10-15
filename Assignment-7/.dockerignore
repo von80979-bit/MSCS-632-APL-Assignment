@@ -1,0 +1,7 @@
+# The image builds from source, so local build output only slows the build context.
+c/stats
+ocaml/stats
+ocaml/*.cm*
+ocaml/*.o
+**/__pycache__
+screenshots
